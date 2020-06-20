@@ -280,10 +280,6 @@ void give_items_skills(const newgame_def& ng)
 
         break;
 
-    case JOB_INITIATE:
-        you.chapter = CHAPTER_NEW_INITIATE;
-        break;
-
     default:
         break;
     }

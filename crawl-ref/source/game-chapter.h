@@ -6,6 +6,5 @@ enum game_chapter
     CHAPTER_ORB_HUNTING, // entered the dungeon but not found the orb yet
     CHAPTER_ESCAPING, // ascending with the orb
     CHAPTER_ANGERED_PANDEMONIUM, // moved the orb without picking it up
-    CHAPTER_NEW_INITIATE, // An In who hasn't yet entered D
     NUM_CHAPTERS,
 };

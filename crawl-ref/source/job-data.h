@@ -184,12 +184,12 @@ static const map<job_type, job_def> job_data =
       { SK_DODGING, 2 }, { SK_STEALTH, 2 }, },
 } },
 
-{ JOB_INITIATE, {
-    "In", "Initiate",
+{ JOB_DELVER, {
+    "De", "Delver",
     4, 2, 6,
     { SP_FELID, SP_SPRIGGAN, SP_CENTAUR, SP_KOBOLD, SP_VAMPIRE, },
-    { "robe", "scroll of magic mapping", "potion of haste", "potion of invisibility",
-      "wand of digging charges:3" },
+    { "leather armour", "scroll of fog", "scroll of magic mapping",
+      "scroll of fear", "potion of haste", "wand of digging charges:3" },
     WCHOICE_PLAIN,
     { { SK_FIGHTING, 3 }, { SK_DODGING, 2 }, { SK_STEALTH, 5 }, { SK_WEAPON, 2 }, },
 } },
