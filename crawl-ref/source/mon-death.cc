@@ -3347,3 +3347,36 @@ bool mons_bennu_can_revive(const monster* mons)
     return !mons->props.exists("bennu_revives")
            || mons->props["bennu_revives"].get_byte() < 1;
 }
+
+/** KILL_RESETs all monsters in LOS.
+*
+*  Doesn't affect monsters behind glass, only those that would
+*  immediately have line-of-fire.
+*/
+void zap_los_monsters()
+{
+    const bool items_also = Hints.hints_events[HINT_SEEN_FIRST_OBJECT];
+    for (radius_iterator ri(you.pos(), LOS_SOLID); ri; ++ri)
+    {
+        if (items_also)
+        {
+            int item = igrd(*ri);
+
+            if (item != NON_ITEM && mitm[item].defined())
+                destroy_item(item);
+        }
+
+        monster* mon = monster_at(*ri);
+        if (mon == nullptr || !mons_is_threatening(*mon) || mon->friendly())
+            continue;
+
+        dprf("Dismissing %s",
+             mon->name(DESC_PLAIN, true).c_str());
+
+        // Do a hard reset so the monster's items will be discarded.
+        mon->flags |= MF_HARD_RESET;
+        // Do a silent, wizard-mode monster_die() just to be extra sure the
+        // player sees nothing.
+        monster_die(*mon, KILL_DISMISSED, NON_MONSTER, true, true);
+    }
+}

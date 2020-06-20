@@ -202,42 +202,6 @@ static void _initialize()
     mpr(options_read_status().tostring().c_str());
 }
 
-/** KILL_RESETs all monsters in LOS.
-*
-*  Doesn't affect monsters behind glass, only those that would
-*  immediately have line-of-fire.
-*
-*  @param items_also whether to zap items as well as monsters.
-*/
-static void _zap_los_monsters(bool items_also)
-{
-    for (radius_iterator ri(you.pos(), LOS_SOLID); ri; ++ri)
-    {
-        if (items_also)
-        {
-            int item = igrd(*ri);
-
-            if (item != NON_ITEM && mitm[item].defined())
-                destroy_item(item);
-        }
-
-        // If we ever allow starting with a friendly monster,
-        // we'll have to check here.
-        monster* mon = monster_at(*ri);
-        if (mon == nullptr || !mons_is_threatening(*mon))
-            continue;
-
-        dprf("Dismissing %s",
-             mon->name(DESC_PLAIN, true).c_str());
-
-        // Do a hard reset so the monster's items will be discarded.
-        mon->flags |= MF_HARD_RESET;
-        // Do a silent, wizard-mode monster_die() just to be extra sure the
-        // player sees nothing.
-        monster_die(*mon, KILL_DISMISSED, NON_MONSTER, true, true);
-    }
-}
-
 static void _post_init(bool newc)
 {
     ASSERT(strwidth(you.your_name) <= MAX_NAME_LENGTH);
@@ -276,9 +240,11 @@ static void _post_init(bool newc)
         you.entering_level = false;
         you.transit_stair = DNGN_UNSEEN;
         you.depth = 1;
-        // Abyssal Knights start out in the Abyss.
+        // Abyssal Knights start out in the Abyss, and Initiates start in Temple.
         if (you.chapter == CHAPTER_POCKET_ABYSS)
             you.where_are_you = BRANCH_ABYSS;
+        else if (you.chapter == CHAPTER_NEW_INITIATE)
+            you.where_are_you = BRANCH_TEMPLE;
         else
             you.where_are_you = root_branch;
     }
@@ -352,7 +318,7 @@ static void _post_init(bool newc)
     {
         // For a new game, wipe out monsters in LOS, and
         // for new hints mode games also the items.
-        _zap_los_monsters(Hints.hints_events[HINT_SEEN_FIRST_OBJECT]);
+        zap_los_monsters();
     }
 
     // This just puts the view up for the first turn.

@@ -972,6 +972,12 @@ void tilep_job_default(int job, dolls_data *doll)
             parts[TILEP_PART_BODY]  = TILEP_BODY_LEATHER_ARMOUR;
             parts[TILEP_PART_LEG]   = TILEP_LEG_PANTS_BLACK;
             break;
+
+        case JOB_INITIATE: // stolen from JOB_PRIEST
+            parts[TILEP_PART_BODY]  = TILEP_BODY_ROBE_WHITE;
+            parts[TILEP_PART_ARM]   = TILEP_ARM_GLOVE_WHITE;
+            parts[TILEP_PART_BOOTS] = TILEP_BOOTS_SHORT_BROWN;
+            break;
     }
 }
 

@@ -16,12 +16,15 @@ FixedVector<level_id, NUM_BRANCHES> create_brentry()
 
     for (branch_iterator it; it; ++it)
     {
-        if (!skip_branch_brentry(it))
-        {
-            candidate_brentry[it->id] = level_id(it->parent_branch,
+        if (skip_branch_brentry(it))
+            continue;
+        int maxdepth = it->maxdepth;
+        if (it->id == BRANCH_TEMPLE && you.char_class == JOB_INITIATE)
+            maxdepth = 5; // D:6+ temples are a bit too nasty to start in.
+        candidate_brentry[it->id] = level_id(it->parent_branch,
                                        random_range(it->mindepth,
-                                                    it->maxdepth));
-        }
+                                                    maxdepth));
+
     }
 
     vector<branch_type> disabled_branch = random_choose_disabled_branches();

@@ -2,7 +2,7 @@
  * @file
  * @brief Initializing non-player-related parts of a new game.
 **/
-/* TODO: 'you' shouldn't occur here.
+/* TODO: 'you' shouldn't occur here. (Except for Initiate?)
  *       Some of these might fit better elsewhere.
  */
 

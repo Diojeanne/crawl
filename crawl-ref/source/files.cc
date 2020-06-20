@@ -2012,6 +2012,16 @@ bool load_level(dungeon_feature_type stair_taken, load_mode_type load_mode,
 
     crawl_view.set_player_at(you.pos(), load_mode != LOAD_VISITOR);
 
+    if (load_mode != LOAD_VISITOR
+        && you.chapter == CHAPTER_NEW_INITIATE
+        && player_in_branch(BRANCH_DUNGEON))
+    {
+        // If we're leaving the Temple for the first time as an Initiate
+        // (who start out there), kill everything in sight.
+        zap_los_monsters();
+        you.chapter = CHAPTER_ORB_HUNTING;
+    }
+
     // Actually "move" the followers if applicable.
     if (load_mode == LOAD_ENTER_LEVEL)
         place_followers();
