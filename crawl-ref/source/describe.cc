@@ -2109,22 +2109,7 @@ string get_item_description(const item_def &item, bool verbose,
         break;
 
     case OBJ_CORPSES:
-        if (item.sub_type == CORPSE_SKELETON)
-            break;
-
-        // intentional fall-through
     case OBJ_FOOD:
-        if (item.base_type == OBJ_CORPSES || item.sub_type == FOOD_CHUNK)
-        {
-            switch (determine_chunk_effect(item))
-            {
-            case CE_NOXIOUS:
-                description << "\n\nThis meat is toxic.";
-                break;
-            default:
-                break;
-            }
-        }
         break;
 
     case OBJ_STAVES:
@@ -2694,7 +2679,7 @@ static bool _do_action(item_def &item, const command_type action)
     case CMD_QUIVER_ITEM:      quiver_item(slot);                   break;
     case CMD_WEAR_ARMOUR:      wear_armour(slot);                   break;
     case CMD_REMOVE_ARMOUR:    takeoff_armour(slot);                break;
-    case CMD_EAT:              eat_food(slot);                      break;
+    case CMD_EAT:              eat_food();                          break;
     case CMD_READ:             read(&item);                         break;
     case CMD_WEAR_JEWELLERY:   puton_ring(slot);                    break;
     case CMD_REMOVE_JEWELLERY: remove_ring(slot, true);             break;
@@ -2962,8 +2947,6 @@ static string _player_spell_stats(const spell_type spell)
     description += spell_power_string(spell);
     description += "\nRange : ";
     description += spell_range_string(spell);
-    description += "\nHunger: ";
-    description += spell_hunger_string(spell);
     description += "\nNoise : ";
     description += spell_noise_string(spell);
     description += "\n";
@@ -3617,7 +3600,6 @@ static string _flavour_base_desc(attack_flavour flavour)
         { AF_DRAIN_XP,          "drain skills" },
         { AF_ELEC,              "deal up to %d extra electric damage" },
         { AF_FIRE,              "deal up to %d extra fire damage" },
-        { AF_HUNGER,            "cause hunger" },
         { AF_MUTATE,            "cause mutations" },
         { AF_POISON_PARALYSE,   "poison and cause paralysis or slowing" },
         { AF_POISON,            "cause poisoning" },

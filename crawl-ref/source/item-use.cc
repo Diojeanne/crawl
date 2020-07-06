@@ -808,16 +808,7 @@ bool armour_prompt(const string & mesg, int *index, operation_types oper)
     return false;
 }
 
-/**
- * The number of turns it takes to put on or take off a given piece of armour.
- *
- * @param item      The armour in question.
- * @return          The number of turns it takes to don or doff the item.
- */
-static int armour_equip_delay(const item_def &/*item*/)
-{
-    return 5;
-}
+static const int ARMOUR_EQUIP_DELAY = 5;
 
 // If you can't wear a bardings, why not? (If you can, return "".)
 static string _cant_wear_barding_reason(bool ignore_temporary)
@@ -827,7 +818,9 @@ static string _cant_wear_barding_reason(bool ignore_temporary)
         && you.species != SP_CENTAUR
 #endif
         )
+    {
         return "You can't wear that!";
+    }
 
     if (!ignore_temporary && player_is_shapechanged())
         return "You can wear that only in your normal form.";
@@ -1270,12 +1263,8 @@ bool wear_armour(int item)
     // NB we already made sure there was space for the item
     int item_slot = _get_item_slot_maybe_with_move(*to_wear);
 
-    const int delay = armour_equip_delay(*to_wear);
-    if (delay)
-    {
-        start_delay<ArmourOnDelay>(delay - (swapping ? 0 : 1),
-                                   you.inv[item_slot]);
-    }
+    start_delay<EquipOnDelay>(ARMOUR_EQUIP_DELAY - (swapping ? 0 : 1),
+                               you.inv[item_slot]);
 
     return true;
 }
@@ -1359,8 +1348,7 @@ bool takeoff_armour(int item)
 
     you.turn_is_over = true;
 
-    const int delay = armour_equip_delay(invitem);
-    start_delay<ArmourOffDelay>(delay - 1, invitem);
+    start_delay<EquipOffDelay>(ARMOUR_EQUIP_DELAY - 1, invitem);
 
     return true;
 }
@@ -1635,7 +1623,7 @@ bool safe_to_remove(const item_def &item, bool quiet)
 // in one of those slots.
 //
 // Does not do amulets.
-static bool _swap_rings(const item_def& to_puton)
+static bool _swap_rings(item_def& to_puton)
 {
     vector<equipment_type> ring_types = _current_ring_types();
     const int num_rings = ring_types.size();
@@ -1822,83 +1810,84 @@ static bool _can_puton_jewellery(const item_def &item)
         return false;
     }
 
-    const bool is_amulet = jewellery_is_amulet(item);
+    return true;
+}
 
-    if (is_amulet && !you_can_wear(EQ_AMULET, true)
-        || !is_amulet && !you_can_wear(EQ_RINGS, true))
+static bool _can_puton_ring(const item_def &item)
+{
+    if (!_can_puton_jewellery(item))
+        return false;
+    if (!you_can_wear(EQ_RINGS, true))
     {
         mpr("You can't wear that in your present form.");
         return false;
     }
 
-    // Make sure there's at least one slot where we could equip this item
-    if (is_amulet)
+    const vector<equipment_type> slots = _current_ring_types();
+    int melded = 0;
+    int cursed = 0;
+    for (auto eq : slots)
     {
-        int existing = you.equip[EQ_AMULET];
-        if (existing != -1 && you.inv[existing].cursed())
+        if (!you_can_wear(eq, true) || you.melded[eq])
         {
-            mprf("%s is stuck to you!",
-                 you.inv[existing].name(DESC_YOUR).c_str());
-            return false;
+            melded++;
+            continue;
         }
+        int existing = you.equip[eq];
+        if (existing != -1 && you.inv[existing].cursed())
+            cursed++;
         else
+            // We found an available slot. We're done.
             return true;
     }
-    // The ring case is a bit more complicated
+    // If we got this far, there are no available slots.
+    if (melded == (int)slots.size())
+        mpr("You can't wear that in your present form.");
     else
-    {
-        const vector<equipment_type> slots = _current_ring_types();
-        int melded = 0;
-        int cursed = 0;
-        for (auto eq : slots)
-        {
-            if (!you_can_wear(eq, true) || you.melded[eq])
-            {
-                melded++;
-                continue;
-            }
-            int existing = you.equip[eq];
-            if (existing != -1 && you.inv[existing].cursed())
-                cursed++;
-            else
-                // We found an available slot. We're done.
-                return true;
-        }
-        // If we got this far, there are no available slots.
-        if (melded == (int)slots.size())
-            mpr("You can't wear that in your present form.");
-        else
-            mprf("You're already wearing %s cursed ring%s!%s",
-                 number_in_words(cursed).c_str(),
-                 (cursed == 1 ? "" : "s"),
-                 (cursed > 2 ? " Isn't that enough for you?" : ""));
-        return false;
-    }
+        mprf("You're already wearing %s cursed ring%s!%s",
+             number_in_words(cursed).c_str(),
+             (cursed == 1 ? "" : "s"),
+             (cursed > 2 ? " Isn't that enough for you?" : ""));
+    return false;
 }
 
-// Put on a particular ring or amulet
-static bool _puton_item(const item_def &item, bool prompt_slot,
-                        bool check_for_inscriptions)
+static bool _can_puton_amulet(const item_def &item)
 {
-    vector<equipment_type> current_jewellery = _current_ring_types();
-    current_jewellery.push_back(EQ_AMULET);
-
-    for (auto eq : current_jewellery)
-        if (&item == you.slot_item(eq, true))
-        {
-            // "Putting on" an equipped item means taking it off.
-            if (Options.equip_unequip)
-                // TODO: why invert the return value here? failing to remove
-                // a ring is equivalent to successfully putting one on?
-                return !remove_ring(item.link);
-            else
-            {
-                mpr("You're already wearing that object!");
-                return false;
-            }
-        }
-
     if (!_can_puton_jewellery(item))
+        return false;
+
+    if (!you_can_wear(EQ_AMULET, true))
+    {
+        mpr("You can't wear that in your present form.");
+        return false;
+    }
+
+    const int existing = you.equip[EQ_AMULET];
+    if (existing != -1 && you.inv[existing].cursed())
+    {
+        mprf("%s is stuck to you!",
+             you.inv[existing].name(DESC_YOUR).c_str());
+        return false;
+    }
+
+    return true;
+}
+
+static bool _puton_amulet(item_def &item,
+                          bool check_for_inscriptions)
+{
+    if (&item == you.slot_item(EQ_AMULET, true))
+    {
+        // "Putting on" an equipped item means taking it off.
+        if (Options.equip_unequip)
+            // TODO: why invert the return value here? failing to remove
+            // an amulet is equivalent to successfully putting one on?
+            return !remove_ring(item.link);
+        mpr("You're already wearing that amulet!");
+        return false;
+    }
+
+    if (!_can_puton_amulet(item))
         return false;
 
     // It looks to be possible to equip this item. Before going any further,
@@ -1911,43 +1900,71 @@ static bool _puton_item(const item_def &item, bool prompt_slot,
         return false;
     }
 
-    const bool is_amulet = jewellery_is_amulet(item);
-
-    const vector<equipment_type> ring_types = _current_ring_types();
-
-    if (!is_amulet)     // i.e. it's a ring
-    {
-        // Check whether there are any unused ring slots
-        bool need_swap = true;
-        for (auto eq : ring_types)
-        {
-            if (!you.slot_item(eq, true))
-            {
-                need_swap = false;
-                break;
-            }
-        }
-
-        // No unused ring slots. Swap out a worn ring for the new one.
-        if (need_swap)
-            return _swap_rings(item);
-    }
-    else if (you.slot_item(EQ_AMULET, true))
+    item_def *old_amu = you.slot_item(EQ_AMULET, true);
+    if (old_amu)
     {
         // Remove the previous one.
-        if (!remove_ring(you.equip[EQ_AMULET], true))
+        if (!remove_ring(old_amu->link, true))
             return false;
 
         // Check for stat loss.
         if (!_safe_to_remove_or_wear(item, false))
             return false;
-
-        // Put on the new amulet.
-        start_delay<JewelleryOnDelay>(1, item);
-
-        // Assume it's going to succeed.
-        return true;
     }
+
+    start_delay<EquipOnDelay>(ARMOUR_EQUIP_DELAY, item);
+    return true;
+}
+
+// Put on a particular ring.
+static bool _puton_ring(item_def &item, bool prompt_slot,
+                        bool check_for_inscriptions)
+{
+    vector<equipment_type> current_jewellery = _current_ring_types();
+
+    for (auto eq : current_jewellery)
+    {
+        if (&item != you.slot_item(eq, true))
+            continue;
+        // "Putting on" an equipped item means taking it off.
+        if (Options.equip_unequip)
+            // TODO: why invert the return value here? failing to remove
+            // a ring is equivalent to successfully putting one on?
+            return !remove_ring(item.link);
+        mpr("You're already wearing that ring!");
+        return false;
+    }
+
+    if (!_can_puton_ring(item))
+        return false;
+
+    // It looks to be possible to equip this item. Before going any further,
+    // we should prompt the user with any warnings that come with trying to
+    // put it on, except when they have already been prompted with them
+    // from switching rings.
+    if (check_for_inscriptions && !check_warning_inscriptions(item, OPER_PUTON))
+    {
+        canned_msg(MSG_OK);
+        return false;
+    }
+
+    const vector<equipment_type> ring_types = _current_ring_types();
+
+    // Check whether there are any unused ring slots
+    bool need_swap = true;
+    for (auto eq : ring_types)
+    {
+        if (!you.slot_item(eq, true))
+        {
+            need_swap = false;
+            break;
+        }
+    }
+
+    // No unused ring slots. Swap out a worn ring for the new one.
+    if (need_swap)
+        return _swap_rings(item);
+
     // At this point, we know there's an empty slot for the ring/amulet we're
     // trying to equip.
 
@@ -1956,10 +1973,7 @@ static bool _puton_item(const item_def &item, bool prompt_slot,
         return false;
 
     equipment_type hand_used = EQ_NONE;
-
-    if (is_amulet)
-        hand_used = EQ_AMULET;
-    else if (prompt_slot)
+    if (prompt_slot)
     {
         // Prompt for a slot, even if we have empty ring slots.
         hand_used = _choose_ring_slot();
@@ -2014,7 +2028,7 @@ static bool _puton_item(const item_def &item, bool prompt_slot,
 }
 
 // Put on a ring or amulet. (Most of the work is in _puton_item.)
-bool puton_ring(const item_def &to_puton, bool allow_prompt,
+bool puton_ring(item_def &to_puton, bool allow_prompt,
                 bool check_for_inscriptions)
 {
     if (you.berserk())
@@ -2033,8 +2047,10 @@ bool puton_ring(const item_def &to_puton, bool allow_prompt,
         return false;
     }
 
-    bool prompt = allow_prompt ? Options.jewellery_prompt : false;
-    return _puton_item(to_puton, prompt, check_for_inscriptions);
+    if (jewellery_is_amulet(to_puton))
+        return _puton_amulet(to_puton, check_for_inscriptions);
+    const bool prompt = allow_prompt && Options.jewellery_prompt;
+    return _puton_ring(to_puton, prompt, check_for_inscriptions);
 }
 
 // Wraps version of puton_ring with item_def param. If slot is -1, prompt for
@@ -2056,12 +2072,11 @@ bool puton_ring(int slot, bool allow_prompt, bool check_for_inscriptions)
     return puton_ring(*to_puton_ptr, allow_prompt, check_for_inscriptions);
 }
 
-// Remove the amulet/ring at given inventory slot (or, if slot is -1, prompt
+// Remove the ring/amulet at given inventory slot (or, if slot is -1, prompt
 // for which piece of jewellery to remove)
 bool remove_ring(int slot, bool announce)
 {
     equipment_type hand_used = EQ_NONE;
-    int ring_wear_2;
     bool has_jewellery = false;
     bool has_melded = false;
     const vector<equipment_type> jewellery_slots = _current_jewellery_types();
@@ -2170,16 +2185,23 @@ bool remove_ring(int slot, bool announce)
         return false;
     }
 
-    ring_wear_2 = you.equip[hand_used];
+    const int removed_ring_slot = you.equip[hand_used];
+    item_def &invitem = you.inv[removed_ring_slot];
+    if (!_safe_to_remove_or_wear(invitem, true))
+        return false;
 
     // Remove the ring.
-    if (!_safe_to_remove_or_wear(you.inv[ring_wear_2], true))
-        return false;
+    you.turn_is_over = true;
+    if (hand_used == EQ_AMULET)
+    {
+        start_delay<EquipOffDelay>(ARMOUR_EQUIP_DELAY - 1, invitem);
+        return true;
+    }
 
 #ifdef USE_SOUND
     parse_sound(REMOVE_JEWELLERY_SOUND);
 #endif
-    mprf("You remove %s.", you.inv[ring_wear_2].name(DESC_YOUR).c_str());
+    mprf("You remove %s.", invitem.name(DESC_YOUR).c_str());
 #ifdef USE_TILE_LOCAL
     const unsigned int old_talents = your_talents(false).size();
 #endif
@@ -2193,7 +2215,6 @@ bool remove_ring(int slot, bool announce)
 #endif
 
     you.time_taken /= 2;
-    you.turn_is_over = true;
 
     return true;
 }
@@ -3548,7 +3569,7 @@ void tile_item_use(int idx)
 
         case OBJ_FOOD:
             if (check_warning_inscriptions(item, OPER_EAT))
-                eat_food(idx);
+                eat_food();
             return;
 
         case OBJ_SCROLLS:

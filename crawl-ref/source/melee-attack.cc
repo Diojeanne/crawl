@@ -617,18 +617,7 @@ bool melee_attack::handle_phase_aux()
  */
 static void _hydra_devour(monster &victim)
 {
-    // what's the highest hunger level this lets the player get to?
-    const hunger_state_t max_hunger = player_likes_chunks() ? HS_ENGORGED
-                                                            : HS_SATIATED;
-
-    // will eating this actually fill the player up?
-    const bool filling = !have_passive(passive_t::goldify_corpses)
-                          && you.get_mutation_level(MUT_HERBIVOROUS, false) == 0
-                          && you.hunger_state <= max_hunger
-                          && you.hunger_state < HS_ENGORGED;
-
-    mprf("You %sdevour %s!",
-         filling ? "hungrily " : "",
+    mprf("You devour %s!",
          victim.name(DESC_THE).c_str());
 
     // give a clearer message for eating invisible things
@@ -643,14 +632,6 @@ static void _hydra_devour(monster &victim)
     }
     if (victim.has_ench(ENCH_STICKY_FLAME))
         mprf("Spicy!");
-
-    // nutrition (maybe)
-    if (filling)
-    {
-        const int equiv_chunks =
-            1 + random2(max_corpse_chunks(victim.type));
-        lessen_hunger(CHUNK_BASE_NUTRITION * equiv_chunks, false, max_hunger);
-    }
 
     // healing
     if (!you.duration[DUR_DEATHS_DOOR])
@@ -678,12 +659,6 @@ static void _hydra_consider_devouring(monster &defender)
 
     dprf("considering devouring");
 
-    // no unhealthy food
-    if (determine_chunk_effect(mons_corpse_effect(defender.type)) != CE_CLEAN)
-        return;
-
-    dprf("chunk ok");
-
     // shapeshifters are mutagenic
     if (defender.is_shapeshifter())
     {
@@ -698,7 +673,8 @@ static void _hydra_consider_devouring(monster &defender)
 
     dprf("shifter ok");
 
-    // or food that would incur divine penance...
+    // or food that would incur divine penance... (cannibalism is still bad
+    // even when transformed!)
     if (god_hates_eating(you.religion, defender.type))
         return;
 
@@ -2718,13 +2694,6 @@ void melee_attack::mons_apply_attack_flavour()
                                                               : STAT_DEX);
             defender->drain_stat(drained_stat, 1);
         }
-        break;
-
-    case AF_HUNGER:
-        if (defender->holiness() & MH_UNDEAD)
-            break;
-
-        defender->make_hungry(you.hunger / 4, false);
         break;
 
     case AF_BLINK:

@@ -2226,16 +2226,13 @@ bool twisted_resurrection(actor *caster, int pow, beh_type beha,
 
     if (num_orcs > 0 && caster->is_player())
         did_god_conduct(DID_DESECRATE_ORCISH_REMAINS, 2 * num_orcs);
-    if (num_holy > 0 && caster->is_player())
-        did_god_conduct(DID_DESECRATE_HOLY_REMAINS, 2 * num_holy);
 
     return true;
 }
 
 monster_type pick_random_wraith()
 {
-    return random_choose_weighted(1, MONS_PHANTOM,
-                                  1, MONS_HUNGRY_GHOST,
+    return random_choose_weighted(2, MONS_PHANTOM,
                                   1, MONS_SHADOW_WRAITH,
                                   5, MONS_WRAITH,
                                   2, MONS_FREEZING_WRAITH,

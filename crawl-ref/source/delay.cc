@@ -74,6 +74,11 @@ int interrupt_block::interrupts_blocked = 0;
 static void _xom_check_corpse_waste();
 static const char *_activity_interrupt_name(activity_interrupt ai);
 
+static string _eq_category(const item_def &equip)
+{
+    return equip.base_type == OBJ_JEWELLERY ? "amulet" : "armour";
+}
+
 void push_delay(shared_ptr<Delay> delay)
 {
     if (delay->is_run())
@@ -168,14 +173,14 @@ bool MacroDelay::try_interrupt()
     // to the Lua function, it can't do damage.
 }
 
-bool ArmourOnDelay::try_interrupt()
+bool EquipOnDelay::try_interrupt()
 {
     if (duration > 1 && !was_prompted)
     {
         if (!crawl_state.disables[DIS_CONFIRMATIONS]
             && !yesno("Keep equipping yourself?", false, 0, false))
         {
-            mpr("You stop putting on your armour.");
+            mprf("You stop putting on your %s.", _eq_category(equip).c_str());
             return true;
         }
         else
@@ -184,14 +189,14 @@ bool ArmourOnDelay::try_interrupt()
     return false;
 }
 
-bool ArmourOffDelay::try_interrupt()
+bool EquipOffDelay::try_interrupt()
 {
     if (duration > 1 && !was_prompted)
     {
         if (!crawl_state.disables[DIS_CONFIRMATIONS]
             && !yesno("Keep disrobing?", false, 0, false))
         {
-            mpr("You stop removing your armour.");
+            mprf("You stop removing your %s.", _eq_category(equip).c_str());
             return true;
         }
         else
@@ -440,10 +445,9 @@ static void _xom_check_corpse_waste()
 
 static bool _auto_eat()
 {
-    return Options.auto_eat_chunks
+    return Options.auto_eat
            && Options.autopickup_on > 0
-           && (player_likes_chunks(true)
-               || !you.gourmand()
+           && (player_likes_chunks() && player_rotted()
                || you.hunger_state < HS_SATIATED);
 }
 
@@ -453,14 +457,16 @@ void clear_macro_process_key_delay()
         _pop_delay();
 }
 
-void ArmourOnDelay::start()
+void EquipOnDelay::start()
 {
-    mprf(MSGCH_MULTITURN_ACTION, "You start putting on your armour.");
+    mprf(MSGCH_MULTITURN_ACTION, "You start putting on your %s.",
+         _eq_category(equip).c_str());
 }
 
-void ArmourOffDelay::start()
+void EquipOffDelay::start()
 {
-    mprf(MSGCH_MULTITURN_ACTION, "You start removing your armour.");
+    mprf(MSGCH_MULTITURN_ACTION, "You start removing your %s.",
+         _eq_category(equip).c_str());
 }
 
 void MemoriseDelay::start()
@@ -539,7 +545,7 @@ void BaseRunDelay::handle()
         if (want_autoeat() && _auto_eat())
         {
             const interrupt_block block_interrupts;
-            if (prompt_eat_chunks(true) == 1)
+            if (eat_food())
                 return;
         }
 
@@ -747,49 +753,53 @@ void JewelleryOnDelay::finish()
     puton_ring(jewellery, false, false);
 }
 
-void ArmourOnDelay::finish()
+void EquipOnDelay::finish()
 {
     const unsigned int old_talents = your_talents(false).size();
 
-    set_ident_flags(armour, ISFLAG_IDENT_MASK);
-    if (is_artefact(armour))
-        armour.flags |= ISFLAG_NOTED_ID;
+    set_ident_flags(equip, ISFLAG_IDENT_MASK);
+    if (is_artefact(equip))
+        equip.flags |= ISFLAG_NOTED_ID;
 
-    const equipment_type eq_slot = get_armour_slot(armour);
+    const bool is_amulet = equip.base_type == OBJ_JEWELLERY;
+    const equipment_type eq_slot = is_amulet ? EQ_AMULET :
+                                               get_armour_slot(equip);
 
 #ifdef USE_SOUND
-    parse_sound(EQUIP_ARMOUR_SOUND);
+    if (!is_amulet)
+        parse_sound(EQUIP_ARMOUR_SOUND);
 #endif
-    mprf("You finish putting on %s.", armour.name(DESC_YOUR).c_str());
+    mprf("You finish putting on %s.", equip.name(DESC_YOUR).c_str());
 
     if (eq_slot == EQ_BODY_ARMOUR)
     {
         if (you.duration[DUR_ICY_ARMOUR] != 0
-            && !is_effectively_light_armour(&armour))
+            && !is_effectively_light_armour(&equip))
         {
             remove_ice_armour();
         }
     }
 
-    equip_item(eq_slot, armour.link);
+    equip_item(eq_slot, equip.link);
 
-    check_item_hint(armour, old_talents);
+    check_item_hint(equip, old_talents);
 }
 
-bool ArmourOffDelay::invalidated()
+bool EquipOffDelay::invalidated()
 {
-    return !armour.defined();
+    return !equip.defined();
 }
 
-void ArmourOffDelay::finish()
+void EquipOffDelay::finish()
 {
-    const equipment_type slot = get_armour_slot(armour);
-    ASSERT(you.equip[slot] == armour.link);
+    const bool is_amu = equip.base_type == OBJ_JEWELLERY;
+    const equipment_type slot = is_amu ? EQ_AMULET : get_armour_slot(equip);
+    ASSERT(you.equip[slot] == equip.link);
 
 #ifdef USE_SOUND
-    parse_sound(DEQUIP_ARMOUR_SOUND);
+    parse_sound(is_amu ? REMOVE_JEWELLERY_SOUND : DEQUIP_ARMOUR_SOUND);
 #endif
-    mprf("You finish taking off %s.", armour.name(DESC_YOUR).c_str());
+    mprf("You finish taking off %s.", equip.name(DESC_YOUR).c_str());
     unequip_item(slot);
 }
 
@@ -1354,7 +1364,7 @@ bool interrupt_activity(activity_interrupt ai,
 
     // If we get hungry while traveling, let's try to auto-eat a chunk.
     if (ai == activity_interrupt::hungry && delay->want_autoeat() && _auto_eat()
-        && prompt_eat_chunks(true) == 1)
+        && eat_food())
     {
         return false;
     }

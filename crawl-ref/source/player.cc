@@ -773,7 +773,9 @@ maybe_bool you_can_wear(equipment_type eq, bool temp)
             you.species == SP_CENTAUR
 #endif
             )
+        {
             alternate.sub_type = ARM_BARDING;
+        }
         break;
 
     case EQ_BODY_ARMOUR:
@@ -1237,10 +1239,9 @@ int player_spell_levels()
     return sl;
 }
 
-bool player_likes_chunks(bool permanently)
+bool player_likes_chunks()
 {
-    return you.gourmand(true, !permanently)
-           || you.get_mutation_level(MUT_CARNIVOROUS) > 0;
+    return you.species == SP_GHOUL;
 }
 
 // If temp is set to false, temporary sources or resistance won't be counted.
@@ -1734,11 +1735,6 @@ int player_spec_poison()
     return sp;
 }
 
-bool hungerless_spells()
-{
-    return you.wearing(EQ_STAFF, STAFF_ENERGY) || you.duration[DUR_BRILLIANCE];
-}
-
 // If temp is set to false, temporary sources of resistance won't be
 // counted.
 int player_prot_life(bool calc_unid, bool temp, bool items)
@@ -2215,8 +2211,7 @@ int player_shield_class()
 
     shield += qazlal_sh_boost() * 100;
     shield += tso_sh_boost() * 100;
-    shield += you.activated[EQ_AMULET] * you.wearing(EQ_AMULET, AMU_REFLECTION)
-              * AMU_REFLECT_SH * 100;
+    shield += you.wearing(EQ_AMULET, AMU_REFLECTION) * AMU_REFLECT_SH * 100;
     shield += you.scan_artefacts(ARTP_SHIELDING) * 200;
 
     return (shield + 50) / 100;
@@ -5512,7 +5507,7 @@ bool player::shielded() const
            || duration[DUR_DIVINE_SHIELD]
            || get_mutation_level(MUT_LARGE_BONE_PLATES) > 0
            || qazlal_sh_boost() > 0
-           || you.wearing(EQ_AMULET, AMU_REFLECTION) && you.activated[EQ_AMULET]
+           || you.wearing(EQ_AMULET, AMU_REFLECTION)
            || you.scan_artefacts(ARTP_SHIELDING);
 }
 

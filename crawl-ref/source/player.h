@@ -973,8 +973,6 @@ void update_acrobat_status();
 bool is_effectively_light_armour(const item_def *item);
 bool player_effectively_in_light_armour();
 
-bool hungerless_spells();
-
 int player_shield_racial_factor();
 int player_armour_shield_spell_penalty();
 
@@ -1003,7 +1001,7 @@ int player_res_acid(bool calc_unid = true, bool items = true);
 bool player_res_torment(bool random = true);
 bool player_kiku_res_torment();
 
-bool player_likes_chunks(bool permanently = false);
+bool player_likes_chunks();
 bool player_likes_water(bool permanently = false);
 
 int player_res_electricity(bool calc_unid = true, bool temp = true,
