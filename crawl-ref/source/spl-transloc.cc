@@ -379,7 +379,8 @@ static bool _check_charge_through(coord_def pos) {
     return true;
 }
 
-bool _find_charge_target(coord_def &target, int max_range, targeter *hitfunc) {
+static bool _find_charge_target(coord_def &target, int max_range,
+                                targeter *hitfunc) {
     while (true) {
         // query for location {dlb}:
         direction_chooser_args args;
