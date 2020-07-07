@@ -270,9 +270,9 @@ void list_armour()
                  (i == EQ_BOOTS) ?
                  ((
 #if TAG_MAJOR_VERSION == 34
-                   you.species == SP_CENTAUR
+                   you.species == SP_CENTAUR ||
 #endif
-                   || you.species == SP_NAGA) ? "Barding"
+                   you.species == SP_NAGA) ? "Barding"
                                               : "Boots  ")
                                  : "unknown")
              << " : ";
