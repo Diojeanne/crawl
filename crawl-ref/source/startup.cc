@@ -272,11 +272,7 @@ static void _post_init(bool newc)
 
         you.entering_level = false;
         you.transit_stair = DNGN_UNSEEN;
-        // Delvers start on D:5.
-        if (you.char_class == JOB_DELVER)
-            you.depth = 5;
-        else
-            you.depth = 1;
+        you.depth = starting_absdepth();
         // Abyssal Knights start out in the Abyss.
         if (you.chapter == CHAPTER_POCKET_ABYSS)
             you.where_are_you = BRANCH_ABYSS;

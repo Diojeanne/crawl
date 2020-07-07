@@ -596,16 +596,25 @@ static bool _valid_monster_generation_location(const mgen_data &mg,
     }
     // Check that the location is not proximal to an area where the player
     // begins the game.
-    else if (mg.proximity == PROX_AWAY_FROM_DUNGEON_ENTRANCE
-             && env.absdepth0 == 0)
+    else if (mg.proximity == PROX_AWAY_FROM_ENTRANCE
+             && env.absdepth0 == starting_absdepth())
     {
         for (distance_iterator di(mg_pos, false, false, LOS_RADIUS); di; ++di)
-            if (feat_is_branch_exit(grd(*di))
+        {
+            if (env.absdepth0 == 0)
+            {
+                if (feat_is_branch_exit(grd(*di))
                 // We may be checking before branch exit cleanup.
                 || feat_is_stone_stair_up(grd(*di)))
-            {
-                return false;
+                {
+                    return false;
+                }
+            } else {
+                // Delvers start on a D:5 downstairs.
+                if (feat_is_stone_stair_down(grd(*di)))
+                    return false;
             }
+        }
     }
 
     return true;
