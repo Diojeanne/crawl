@@ -323,3 +323,6 @@ private:
     int range;
     vector<coord_def> path_taken; // Path the charge took.
 };
+
+string bad_charge_target(coord_def a);
+bool can_charge_through_mons(coord_def a);

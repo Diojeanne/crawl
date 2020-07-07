@@ -75,6 +75,43 @@ bool targeter::affects_monster(const monster_info& /*mon*/)
     return true; //TODO: false
 }
 
+// Is the given location a valid endpoint for a Palentonga charge?
+// That is, is there an enemy there which is visible to the player and
+// is not firewood? If not, why not?
+// Note that this does NOT handle checking the intervening path for
+// obstacles or checking the distance from the player.
+string bad_charge_target(coord_def a)
+{
+    const monster* mons = monster_at(a);
+    // You can only charge at monsters.
+    // Specifically, monsters you can see. (No guessing!)
+    // You can't charge at plants you walk right through.
+    if (!mons || !you.can_see(*mons) || fedhas_passthrough(mons))
+        return "You can't see anything there to charge at!";
+
+    // You can't charge at friends. (Also, rude.)
+    // You can't charge at firewood. It's firewood.
+    if (mons_aligned(mons, &you) || mons_is_firewood(*mons))
+        return "Why would you want to do that?";
+    return "";
+}
+
+static bool _ok_charge_target(coord_def a)
+{
+    return bad_charge_target(a) == "";
+}
+
+// Can a player (for targeting purposes) charge through a given grid
+// with a Palentonga rolling charge?
+// We only check for monsters, not terrain.
+bool can_charge_through_mons(coord_def a)
+{
+    const monster* mons = monster_at(a);
+    return !mons
+           || !you.can_see(*mons)
+           || fedhas_passthrough(mons);
+}
+
 targeter_charge::targeter_charge(const actor *act, int r)
 {
     ASSERT(act);
@@ -96,12 +133,11 @@ bool targeter_charge::valid_aim(coord_def a)
     if (!find_ray(agent->pos(), a, ray, opc_solid))
         return false;
     while (ray.advance()) {
-        const monster* mons = monster_at(ray.pos());
-        const bool can_atk = mons && agent->can_see(*mons)
-                             && !fedhas_passthrough(mons);
         if (ray.pos() == a)
-            return can_atk;
-        if (is_feat_dangerous(grd(ray.pos())))
+            return _ok_charge_target(ray.pos());
+        if (!can_charge_through_mons(ray.pos()))
+            return false;
+        if (is_feat_dangerous(grd(a)))
             return false;
     }
     return false;
@@ -120,8 +156,7 @@ bool targeter_charge::set_aim(coord_def a)
         if (grid_distance(agent->pos(), ray.pos()) >= range || ray.pos() == a)
             break;
 
-        const monster* target_mons = monster_at(ray.pos());
-        if (target_mons && agent->can_see(*target_mons) && !fedhas_passthrough(target_mons))
+        if (!can_charge_through_mons(ray.pos()))
             break;
         if (is_feat_dangerous(grd(ray.pos())))
             return false;
@@ -140,8 +175,7 @@ aff_type targeter_charge::is_affected(coord_def loc) {
     }
     if (!in_path)
         return AFF_NO;
-    const monster* target_mons = monster_at(loc);
-    if (target_mons && agent->can_see(*target_mons) && !fedhas_passthrough(target_mons))
+    if (_ok_charge_target(loc))
         return AFF_MAYBE; // the target of the attack
     if (grid_distance(agent->pos(), loc) == range)
         return AFF_NO; // out of range for movement and nothing seen

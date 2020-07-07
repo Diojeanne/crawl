@@ -448,8 +448,7 @@ bool _find_charge_target(coord_def &target, int max_range, targeter *hitfunc) {
 
         bool ok = true;
         while (ray.advance()) {
-            const monster* mons = monster_at(ray.pos());
-            if (mons && you.can_see(*mons) && !fedhas_passthrough(mons))
+            if (!can_charge_through_mons(ray.pos()))
                 break;
             ok = _check_charge_through(ray.pos());
             if (ray.pos() == beam.target || !ok)
@@ -461,10 +460,10 @@ bool _find_charge_target(coord_def &target, int max_range, targeter *hitfunc) {
         // DON'T use beam.target here - we might have used ! targeting to
         // target something behind another known monster
         const monster* target_mons = monster_at(ray.pos());
-        const bool attacking = target_mons && you.can_see(*target_mons) && !fedhas_passthrough(target_mons);
-
-        if (!attacking) {
-            mpr("You can't see anything there to charge at!");
+        const string bad_charge = bad_charge_target(ray.pos());
+        if (bad_charge != "")
+        {
+            mpr(bad_charge.c_str());
             continue;
         }
 
