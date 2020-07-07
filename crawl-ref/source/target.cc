@@ -133,12 +133,12 @@ bool targeter_charge::valid_aim(coord_def a)
     if (!find_ray(agent->pos(), a, ray, opc_solid))
         return false;
     while (ray.advance()) {
-        if (ray.pos() == a)
+        if (ray.pos() == a
+            || !can_charge_through_mons(ray.pos())
+            || is_feat_dangerous(grd(ray.pos())))
+        {
             return _ok_charge_target(ray.pos());
-        if (!can_charge_through_mons(ray.pos()))
-            return false;
-        if (is_feat_dangerous(grd(a)))
-            return false;
+        }
     }
     return false;
 }
