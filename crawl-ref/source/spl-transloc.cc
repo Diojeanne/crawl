@@ -479,9 +479,7 @@ bool _find_charge_target(coord_def &target, int max_range, targeter *hitfunc) {
         // Intentionally don't use the real attack position here - that's only used for sanctuary,
         // so it's more accurate if we use our current pos, since sanctuary should move with us.
         if (stop_attack_prompt(target_mons, false, target_mons->pos()))
-        {
             continue;
-        }
 
         // Check for unholy weapons, breadswinging, etc
         if (!wielded_weapon_check(you.weapon()))
@@ -525,9 +523,7 @@ spret palentonga_charge(bool fail)
 
     monster* target_mons = monster_at(target);
     if (fedhas_passthrough(target_mons))
-    {
         target_mons = nullptr;
-    }
     ASSERT(target_mons != nullptr);
     // Are you actually moving forward?
     if (grid_distance(you.pos(), target) > 1 || !target_mons)
