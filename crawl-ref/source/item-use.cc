@@ -813,14 +813,8 @@ static const int ARMOUR_EQUIP_DELAY = 5;
 // If you can't wear a bardings, why not? (If you can, return "".)
 static string _cant_wear_barding_reason(bool ignore_temporary)
 {
-    if (you.species != SP_NAGA
-#if TAG_MAJOR_VERSION == 34
-        && you.species != SP_CENTAUR
-#endif
-        )
-    {
+    if (!you.wear_barding())
         return "You can't wear that!";
-    }
 
     if (!ignore_temporary && player_is_shapechanged())
         return "You can wear that only in your normal form.";
@@ -1046,10 +1040,15 @@ bool can_wear_armour(const item_def &item, bool verbose, bool ignore_temporary)
             return false;
         }
 
-        if (you.species == SP_NAGA)
+        if (you.wear_barding())
         {
             if (verbose)
-                mpr("You have no legs!");
+            {
+                if (you.species == SP_NAGA)
+                    mpr("You have no legs!");
+                else
+                    mpr("Boots don't fit your feet!");
+            }
             return false;
         }
 

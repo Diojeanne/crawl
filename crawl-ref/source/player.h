@@ -669,6 +669,8 @@ public:
                           bool ignore_brand = false,
                           bool ignore_transform = false,
                           bool quiet = true) const override;
+    
+    bool wear_barding() const;
 
     string name(description_level_type type, bool force_visible = false,
                 bool force_article = false) const override;

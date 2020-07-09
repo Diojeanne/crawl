@@ -768,14 +768,8 @@ maybe_bool you_can_wear(equipment_type eq, bool temp)
 
     case EQ_BOOTS: // And bardings
         dummy.sub_type = ARM_BOOTS;
-        if (you.species == SP_NAGA ||
-#if TAG_MAJOR_VERSION == 34
-            you.species == SP_CENTAUR
-#endif
-            )
-        {
+        if (you.wear_barding())
             alternate.sub_type = ARM_BARDING;
-        }
         break;
 
     case EQ_BODY_ARMOUR:
@@ -6847,10 +6841,7 @@ bool player::has_usable_hooves(bool allow_tran) const
 {
     return has_hooves(allow_tran)
            && (!slot_item(EQ_BOOTS)
-#if TAG_MAJOR_VERSION == 34
-               || wearing(EQ_BOOTS, ARM_BARDING, true)
-#endif
-               );
+               || wearing(EQ_BOOTS, ARM_BARDING, true));
 }
 
 int player::has_fangs(bool allow_tran) const
@@ -7709,6 +7700,19 @@ bool player::form_uses_xl() const
         || form == transformation::bat && you.species != SP_VAMPIRE;
 }
 
+bool player::wear_barding() const {
+    switch (you.species) {
+        case SP_NAGA:
+        case SP_PALENTONGA:
+#if TAG_MAJOR_VERSION == 34
+        case SP_CENTAUR:
+#endif
+            return true;
+        default:
+            return false;
+    }
+}
+
 static int _get_potion_heal_factor()
 {
     // healing factor is expressed in thirds, so default is 3/3 -- 100%.
@@ -7746,6 +7750,7 @@ void print_potion_heal_message()
     else if (_get_potion_heal_factor() < 3)
         mpr("Your system partially rejects the healing.");
 }
+
 
 bool player::can_potion_heal()
 {
