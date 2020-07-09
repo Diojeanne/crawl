@@ -314,7 +314,7 @@ static const ability_def Ability_List[] =
 
     { ABIL_HOP, "Hop", 0, 0, 0, {}, abflag::none },
 
-    { ABIL_ROLLING_CHARGE, "Rolling Charge", 0, 0, 0, 0, {}, abflag::none },
+    { ABIL_ROLLING_CHARGE, "Rolling Charge", 0, 0, 0, {}, abflag::none },
 
     // EVOKE abilities use Evocations and come from items.
     // Teleportation and Blink can also come from mutations
