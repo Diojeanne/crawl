@@ -14,7 +14,7 @@ aptitudes:
   long_blades: 0
   axes: 0
   maces_and_flails: 0
-  polearms: 0
+  polearms: -1
   staves: 0
   slings: -3
   bows: -2
