@@ -1360,7 +1360,7 @@ static void _generate_food_item(item_def& item, int force_quant, int force_type)
     }
 
     // Determine quantity.
-    item.quantity = force_quant > 1 ? force_quant : 1;
+    item.quantity = force_quant > 2 ? force_quant : 2;
 }
 
 static void _generate_potion_item(item_def& item, int force_type,
@@ -1923,7 +1923,7 @@ int items(bool allow_uniques,
     else
     {
         ASSERT(force_type == OBJ_RANDOM);
-        // Total weight: 1960
+        // Total weight: 2000
         item.base_type = random_choose_weighted(
                                     10, OBJ_STAVES,
                                     30, OBJ_BOOKS,

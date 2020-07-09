@@ -1310,7 +1310,7 @@ void run_animation(animation_type anim, use_animation_type type, bool cleanup)
 
 static bool _view_is_updating = false;
 
-crawl_view_buffer view_dungeon(animation *a, bool anim_updates);
+crawl_view_buffer view_dungeon(animation *a, bool anim_updates, view_renderer *renderer);
 
 static bool _viewwindow_should_render()
 {
@@ -1325,8 +1325,6 @@ static bool _viewwindow_should_render()
     return !run_dont_draw;
 }
 
-void _view_clear_overlays();
-
 /**
  * Draws the main window using the character set returned
  * by get_show_glyph().
@@ -1337,8 +1335,9 @@ void _view_clear_overlays();
  * @param tiles_only if true, only the tile view will be updated. This
  *                   is only relevant for Webtiles.
  * @param a[in] the animation to be showing, if any.
+ * @param renderer[in] A view renderer used to inject extra visual elements.
  */
-void viewwindow(bool show_updates, bool tiles_only, animation *a)
+void viewwindow(bool show_updates, bool tiles_only, animation *a, view_renderer *renderer)
 {
     if (_view_is_updating)
     {
@@ -1398,10 +1397,9 @@ void viewwindow(bool show_updates, bool tiles_only, animation *a)
 
 #ifdef USE_TILE
             tile_draw_floor();
-            tile_draw_rays(true);
             tile_draw_map_cells();
 #endif
-            _view_clear_overlays();
+            view_clear_overlays();
         }
 
         if (show_updates)
@@ -1409,7 +1407,7 @@ void viewwindow(bool show_updates, bool tiles_only, animation *a)
 
         if (_viewwindow_should_render())
         {
-            const auto vbuf = view_dungeon(a, anim_updates);
+            const auto vbuf = view_dungeon(a, anim_updates, renderer);
 
             you.last_view_update = you.num_turns;
 #ifndef USE_TILE_LOCAL
@@ -1467,7 +1465,7 @@ void view_add_glyph_overlay(const coord_def &gc, cglyph_t glyph)
 }
 #endif
 
-void _view_clear_overlays()
+void view_clear_overlays()
 {
 #ifdef USE_TILE
     tile_overlays.clear();
@@ -1483,7 +1481,7 @@ void _view_clear_overlays()
  * @param a[in] the animation to be showing, if any.
  * @return A new view buffer with the rendered content.
  */
-crawl_view_buffer view_dungeon(animation *a, bool anim_updates)
+crawl_view_buffer view_dungeon(animation *a, bool anim_updates, view_renderer *renderer)
 {
     crawl_view_buffer vbuf(crawl_view.viewsz);
 
@@ -1511,6 +1509,9 @@ crawl_view_buffer view_dungeon(animation *a, bool anim_updates)
 
         cell++;
     }
+
+    if (renderer)
+        renderer->render(vbuf);
 
     return vbuf;
 }

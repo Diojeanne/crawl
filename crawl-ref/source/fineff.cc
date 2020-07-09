@@ -550,7 +550,7 @@ void infestation_death_fineff::fire()
                                                        SPELL_INFESTATION),
                                          false))
     {
-        scarab->add_ench(mon_enchant(ENCH_FAKE_ABJURATION, 6));
+        scarab->add_ench(mon_enchant(ENCH_FAKE_ABJURATION, 5));
 
         if (you.see_cell(posn) || you.can_see(*scarab))
         {
@@ -580,7 +580,7 @@ void make_derived_undead_fineff::fire()
         if (!mg.mname.empty())
             name_zombie(*undead, mg.base_type, mg.mname);
 
-        undead->add_ench(mon_enchant(ENCH_FAKE_ABJURATION, 6));
+        undead->add_ench(mon_enchant(ENCH_FAKE_ABJURATION, 5));
         if (!agent.empty())
         {
             mons_add_blame(undead,
